@@ -38,8 +38,9 @@ module.exports = {
           next();
         } else {
           console.log("BLOCKING...");
-          fs.watch(blockFile, function(event) {
+          var watcher = fs.watch(blockFile, function(event) {
             if(event === "rename") {
+              watcher.close();
               next();
             }
           });
