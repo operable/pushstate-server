@@ -2,6 +2,7 @@ var connect = require('connect');
 var modRewrite = require('connect-modrewrite');
 var serveStatic = require('serve-static');
 var compression = require('compression');
+var fs = require('fs');
 var app = connect();
 
 module.exports = {
@@ -22,6 +23,29 @@ module.exports = {
     var port = process.env.PORT || options.port || this._port;
     var directory = options.directory || this._directory;
     var directories = options.directories || [directory];
+
+    app.use(function logger(req, res, next) {
+      console.log(req.method, req.url);
+
+      next();
+    });
+
+    app.use(function blocker(req, res, next) {
+      var blockFile = directory + '/.block';
+
+      fs.exists(blockFile, function(exists) {
+        if(!exists) {
+          next();
+        } else {
+          console.log("BLOCKING...");
+          fs.watch(blockFile, function(event) {
+            if(event === "rename") {
+              next();
+            }
+          });
+        }
+      });
+    });
 
     app.use(modRewrite([
       '!\\.html|\\.js|\\.json|\\.ico|\\.csv|\\.css|\\.png|\\.svg|\\.eot|\\.ttf|\\.woff|\\.appcache|\\.jpg|\\.jpeg|\\.gif /index.html [L]'
